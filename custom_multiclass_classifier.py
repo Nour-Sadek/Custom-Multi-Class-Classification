@@ -92,7 +92,8 @@ class SoftmaxRegression(CustomMultiClassClassifier):
         # Set up initial values of <self._weights> and <self._bias>
         nb_observations, nb_features = X_train.shape
         nb_classes = np.unique(y_train).size
-        self._weights = np.zeros((nb_features, nb_classes))
+        np.random.seed(20)
+        self._weights = np.random.randn(nb_features, nb_classes) * 0.01
         self._bias = np.zeros((1, nb_classes))
 
         # Create the design matrix for <X_train>
@@ -119,11 +120,18 @@ class SoftmaxRegression(CustomMultiClassClassifier):
             self._accuracy.append(accuracy)
             self._loss.append(loss)
 
+    def predict_probabilities(self, X_test: np.ndarray) -> np.ndarray:
+        """Return a 1-D numpy array of probabilities after applying the linear model on <X_test> and transforming
+        the values using the sigmoid function"""
+
+        X_per_class = (X_test @ self._weights) + self._bias
+        probs_per_class = self.softmax(X_per_class)
+        return probs_per_class
+
     def predict(self, X_test: np.ndarray) -> np.ndarray:
         """Return a 1D numpy array assigning predicted classifications based on classes seen during training for the
         observations in <X_test> of shape nb_observations x nb_features"""
-        X_per_class = (X_test @ self._weights) + self._bias
-        probs_per_class = self.softmax(X_per_class)
+        probs_per_class = self.predict_probabilities(X_test)
         return np.argmax(probs_per_class, axis=1)
 
     def plot_loss(self) -> None:
