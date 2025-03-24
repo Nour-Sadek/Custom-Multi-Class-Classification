@@ -1,4 +1,5 @@
 from custom_multiclass_classifier import SoftmaxRegression
+from custom_multiclass_classifier import OneVsRestRegression
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.datasets import load_wine
@@ -24,19 +25,41 @@ def center_data(X: np.ndarray) -> np.ndarray:
 # Center the train and test datasets separately
 X_train, X_test = center_data(X_train), center_data(X_test)
 
-"""Output of the custom model"""
+"""Output of the custom model using One-vs-Rest (OvR) Classifier"""
+custom_ovr = OneVsRestRegression(0.0001, 10000, np.unique(y).size)
+custom_ovr.fit(X_train, y_train)
+
+# Using the trained model to predict classifications of the test dataset
+y_predictions_custom_ovr = custom_ovr.predict(X_test)
+
+# Sort <y_probabilities_custom> based on increasing order of predicted probabilities
+indices_sorted_on_probability_ovr = np.argsort(y_predictions_custom_ovr)
+y_probabilities_custom_sorted_ovr = y_predictions_custom_ovr[indices_sorted_on_probability_ovr]
+y_test_sorted_based_on_custom_predictions = y_test[indices_sorted_on_probability_ovr]  # Apply the same order
+
+# Visualize the probabilities of <X_test> based on predictions of custom model
+fig, ax = plt.subplots()
+scatter = ax.scatter(range(len(y_probabilities_custom_sorted_ovr)), y_probabilities_custom_sorted_ovr, linewidths=0.3,
+                     edgecolors="w", c=y_test_sorted_based_on_custom_predictions, cmap="rainbow", s=20)
+plt.gca().set_xticklabels([])
+handles, labels = scatter.legend_elements()
+legend = ax.legend(handles=handles, labels=["0", "1", "2"], title="Actual Class")
+plt.text(32, 0, "Accuracy = " + str(round(custom_ovr.determine_accuracy(y_test, y_predictions_custom_ovr), 3)))
+plt.ylabel("Model prediction of probability of belonging to either class")
+plt.title("Prediction of custom logistic regression model using Gradient Descent")
+plt.show()
+
+"""Output of the custom model using Softmax Classifier"""
 custom_model = SoftmaxRegression(0.0001, 25000)
 custom_model.fit(X_train, y_train)
 custom_model.plot_loss()
 
 # Using the trained model to predict classifications of the test dataset
 y_predictions_custom = custom_model.predict(X_test)
-y_predicted_probabs_custom = custom_model.predict_probabilities(X_test)
-y_probabilities_custom = y_predicted_probabs_custom.argmax(axis=1)
 
 # Sort <y_probabilities_custom> based on increasing order of predicted probabilities
-indices_sorted_on_probability = np.argsort(y_probabilities_custom)
-y_probabilities_custom_sorted = y_probabilities_custom[indices_sorted_on_probability]
+indices_sorted_on_probability = np.argsort(y_predictions_custom)
+y_probabilities_custom_sorted = y_predictions_custom[indices_sorted_on_probability]
 y_test_sorted_based_on_custom_predictions = y_test[indices_sorted_on_probability]  # Apply the same order
 
 # Visualize the probabilities of <X_test> based on predictions of custom model
@@ -44,7 +67,6 @@ fig, ax = plt.subplots()
 scatter = ax.scatter(range(len(y_probabilities_custom_sorted)), y_probabilities_custom_sorted, linewidths=0.3,
                      edgecolors="w", c=y_test_sorted_based_on_custom_predictions, cmap="rainbow", s=20)
 plt.gca().set_xticklabels([])
-plt.axhline(y=0.5, color="k", linestyle="--")
 handles, labels = scatter.legend_elements()
 legend = ax.legend(handles=handles, labels=["0", "1", "2"], title="Actual Class")
 plt.text(32, 0, "Accuracy = " + str(round(custom_model.determine_accuracy(y_test, y_predictions_custom), 3)))
@@ -72,7 +94,6 @@ fig, ax = plt.subplots()
 scatter = ax.scatter(range(len(y_probabilities_sklearn_sorted)), y_probabilities_sklearn_sorted, linewidths=0.3,
                      edgecolors="w", c=y_test_sorted_based_on_sklearn_predictions, cmap="rainbow", s=20)
 plt.gca().set_xticklabels([])
-plt.axhline(y=0.5, color="k", linestyle="--")
 handles, labels = scatter.legend_elements()
 legend = ax.legend(handles=handles, labels=["0", "1", "2"], title="Actual Class")
 plt.text(32, 0, "Accuracy = " + str(round(sklearn_model.score(X_test, y_test), 3)))
