@@ -8,10 +8,7 @@ class CustomMultiClassClassifier:
 
     _learning_rate: float
     _iterations: int
-    _weights: np.ndarray
-    _bias: np.ndarray
     _accuracy: list[float]
-    _loss: list[float]
 
     def __init__(self, learning_rate: float, iterations: int) -> None:
         """Initialize a new CustomMultiClassClassifier instance with _learning_rate <learning_rate> and _iterations
@@ -23,10 +20,7 @@ class CustomMultiClassClassifier:
 
         self._learning_rate = learning_rate
         self._iterations = iterations
-        self._weights = None
-        self._bias = None
         self._accuracy = []
-        self._loss = []
 
     @property
     def learning_rate(self) -> float:
@@ -68,8 +62,17 @@ class SoftmaxRegression(CustomMultiClassClassifier):
 
     """Using the Softmax algorithm to perform multi-class Logistic Regression Classification"""
 
+    _weights: np.ndarray
+    _bias: np.ndarray
+    _loss: list[float]
+
     def __init__(self, learning_rate: float, iterations: int) -> None:
+        """Initialize a new SoftmaxRegression instance with _learning_rate <learning_rate> and _iterations
+        <iterations>."""
         super().__init__(learning_rate, iterations)
+        self._weights = None
+        self._bias = None
+        self._loss = []
 
     def softmax(self, X_per_class: np.ndarray) -> np.ndarray:
         """Return the output of applying the softmax function on the <X_by_class> array of shape
@@ -145,8 +148,43 @@ class SoftmaxRegression(CustomMultiClassClassifier):
 
 class OneVsRestRegression(CustomMultiClassClassifier):
 
+    """Using the One-Vs-Rest Classifier to perform multi-class Logistic Regression Classification"""
+
+    _nb_classes: int
+    _onevrest_models: list[SoftmaxRegression]
+
+    def __init__(self, learning_rate: float, iterations: int, nb_classes: int) -> None:
+        """Initialize a new OneVsRestRegression instance with _learning_rate <learning_rate> and _iterations
+        <iterations>."""
+        super().__init__(learning_rate, iterations)
+        self._nb_classes = nb_classes
+        self._onevrest_models = [SoftmaxRegression(learning_rate, iterations) for _ in range(nb_classes)]
+
     def fit(self, X_train: np.ndarray, y_train: np.ndarray) -> None:
-        return
+        """Fit <self._nb_classes> Binary Softmax Regression classifiers where it is one class (1) versus all other
+        classes (0) on the given <X_train> and <y_train> arrays."""
+        for class_number in range(self._nb_classes):
+            # Change all classes other than <class_number> to 0
+            y_train_binary = (y_train == class_number).astype(int)
+            # Train each binary model using Softmax Regression
+            self._onevrest_models[class_number].fit(X_train, y_train_binary)
+
+    def predict_probabilities(self, X_test: np.ndarray) -> np.ndarray:
+        """Return a 2D numpy array of shape nb_observations x <self._nb_classes> where the probability for an
+        observation to be classified as one class is determined by the Binary Classifiers stored in
+        <self._onevrest_models>."""
+        probs_per_class = np.zeros((X_test.shape[0], self._nb_classes))
+        for class_number in range(self._nb_classes):
+            probs_per_class[:, class_number] = self._onevrest_models[class_number].predict_probabilities(X_test)[:, 1]
+        return probs_per_class
+
+    def predict(self, X_test: np.ndarray) -> np.ndarray:
+        """Return a 1D numpy array assigning predicted classifications based on classes seen during training for the
+        observations in <X_test> of shape nb_observations x nb_features. Those predictions are determined by choosing
+        the class with the highest probability among all of them per observation."""
+        probs_per_class = self.predict_probabilities(X_test)
+        # Select the class with the highest probability among all of them per observation
+        return np.argmax(probs_per_class, axis=1)
 
 
 class OneVsOneRegression(CustomMultiClassClassifier):
