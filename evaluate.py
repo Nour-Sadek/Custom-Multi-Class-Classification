@@ -25,6 +25,7 @@ def center_data(X: np.ndarray) -> np.ndarray:
 # Center the train and test datasets separately
 X_train, X_test = center_data(X_train), center_data(X_test)
 
+
 """Output of the custom model using One-vs-Rest (OvR) Classifier"""
 custom_ovr = OneVsRestRegression(0.0001, 10000, np.unique(y).size)
 custom_ovr.fit(X_train, y_train)
@@ -35,19 +36,8 @@ y_predictions_custom_ovr = custom_ovr.predict(X_test)
 # Sort <y_probabilities_custom> based on increasing order of predicted probabilities
 indices_sorted_on_probability_ovr = np.argsort(y_predictions_custom_ovr)
 y_probabilities_custom_sorted_ovr = y_predictions_custom_ovr[indices_sorted_on_probability_ovr]
-y_test_sorted_based_on_custom_predictions = y_test[indices_sorted_on_probability_ovr]  # Apply the same order
+y_test_sorted_based_on_custom_ovr_predictions = y_test[indices_sorted_on_probability_ovr]  # Apply the same order
 
-# Visualize the probabilities of <X_test> based on predictions of custom model
-fig, ax = plt.subplots()
-scatter = ax.scatter(range(len(y_probabilities_custom_sorted_ovr)), y_probabilities_custom_sorted_ovr, linewidths=0.3,
-                     edgecolors="w", c=y_test_sorted_based_on_custom_predictions, cmap="rainbow", s=20)
-plt.gca().set_xticklabels([])
-handles, labels = scatter.legend_elements()
-legend = ax.legend(handles=handles, labels=["0", "1", "2"], title="Actual Class")
-plt.text(32, 0, "Accuracy = " + str(round(custom_ovr.determine_accuracy(y_test, y_predictions_custom_ovr), 3)))
-plt.ylabel("Model prediction of probability of belonging to either class")
-plt.title("Prediction of custom logistic regression model using Gradient Descent")
-plt.show()
 
 """Output of the custom model using Softmax Classifier"""
 custom_model = SoftmaxRegression(0.0001, 25000)
@@ -62,20 +52,8 @@ indices_sorted_on_probability = np.argsort(y_predictions_custom)
 y_probabilities_custom_sorted = y_predictions_custom[indices_sorted_on_probability]
 y_test_sorted_based_on_custom_predictions = y_test[indices_sorted_on_probability]  # Apply the same order
 
-# Visualize the probabilities of <X_test> based on predictions of custom model
-fig, ax = plt.subplots()
-scatter = ax.scatter(range(len(y_probabilities_custom_sorted)), y_probabilities_custom_sorted, linewidths=0.3,
-                     edgecolors="w", c=y_test_sorted_based_on_custom_predictions, cmap="rainbow", s=20)
-plt.gca().set_xticklabels([])
-handles, labels = scatter.legend_elements()
-legend = ax.legend(handles=handles, labels=["0", "1", "2"], title="Actual Class")
-plt.text(32, 0, "Accuracy = " + str(round(custom_model.determine_accuracy(y_test, y_predictions_custom), 3)))
-plt.ylabel("Model prediction of probability of belonging to either class")
-plt.title("Prediction of custom logistic regression model using Gradient Descent")
-plt.show()
 
-
-"""Output of the sci-kit learn LogisticRegression model"""
+"""Output of the sci-kit learn multi-class LogisticRegression model"""
 sklearn_model = LogisticRegression(penalty="l2", solver="newton-cg", random_state=20)
 sklearn_model.fit(X_train, y_train)
 
@@ -89,14 +67,36 @@ indices_sorted_on_probability_sklearn = np.argsort(y_probabilities_sklearn)
 y_probabilities_sklearn_sorted = y_probabilities_sklearn[indices_sorted_on_probability_sklearn]
 y_test_sorted_based_on_sklearn_predictions = y_test[indices_sorted_on_probability_sklearn]  # Apply the same order
 
-# Visualize the probabilities of <X_test> based on predictions of custom model
-fig, ax = plt.subplots()
-scatter = ax.scatter(range(len(y_probabilities_sklearn_sorted)), y_probabilities_sklearn_sorted, linewidths=0.3,
-                     edgecolors="w", c=y_test_sorted_based_on_sklearn_predictions, cmap="rainbow", s=20)
-plt.gca().set_xticklabels([])
+
+"""Plot three figures that show each model's predictions versus actual actual class on the test set"""
+# Create a figure where three plots are shown next to each other
+fig, axes = plt.subplots(ncols=3, figsize=(16, 10))
+
+# Visualize the probabilities of <X_test> based on predictions of custom One-vs-Rest classifier
+scatter = axes[0].scatter(range(len(y_probabilities_custom_sorted_ovr)), y_probabilities_custom_sorted_ovr, linewidths=0.3,
+                          edgecolors="w", c=y_test_sorted_based_on_custom_ovr_predictions, cmap="rainbow", s=20)
+axes[0].set_xticklabels([])
 handles, labels = scatter.legend_elements()
-legend = ax.legend(handles=handles, labels=["0", "1", "2"], title="Actual Class")
-plt.text(32, 0, "Accuracy = " + str(round(sklearn_model.score(X_test, y_test), 3)))
-plt.ylabel("Model prediction of probability of belonging to either class")
-plt.title("Prediction of sci-kit learn's logistic regression model using the newton-cg model with l2 regularization")
+axes[0].legend(handles=handles, labels=["0", "1", "2"], title="Actual Class")
+axes[0].text(25, 0, "Accuracy = " + str(round(custom_ovr.determine_accuracy(y_test, y_predictions_custom_ovr), 3)))
+axes[0].set_ylabel("Model prediction of probability of belonging to either class")
+axes[0].set_title("Using custom One-vs-Rest Classifier")
+
+# Visualize the probabilities of <X_test> based on predictions of custom Softmax Regression classifier
+scatter = axes[1].scatter(range(len(y_probabilities_custom_sorted)), y_probabilities_custom_sorted, linewidths=0.3,
+                          edgecolors="w", c=y_test_sorted_based_on_custom_predictions, cmap="rainbow", s=20)
+axes[1].set_xticklabels([])
+axes[1].legend(handles=handles, labels=["0", "1", "2"], title="Actual Class")
+axes[1].text(25, 0, "Accuracy = " + str(round(custom_model.determine_accuracy(y_test, y_predictions_custom), 3)))
+axes[1].set_title("Using custom Softmax Regression")
+
+# Visualize the probabilities of <X_test> based on predictions of sklearn's multi-class logistic regression classifier
+scatter = axes[2].scatter(range(len(y_probabilities_sklearn_sorted)), y_probabilities_sklearn_sorted, linewidths=0.3,
+                          edgecolors="w", c=y_test_sorted_based_on_sklearn_predictions, cmap="rainbow", s=20)
+axes[2].set_xticklabels([])
+axes[2].legend(handles=handles, labels=["0", "1", "2"], title="Actual Class")
+axes[2].text(25, 0, "Accuracy = " + str(round(sklearn_model.score(X_test, y_test), 3)))
+axes[2].set_title("Using sklearn")
+
+plt.tight_layout()
 plt.show()
