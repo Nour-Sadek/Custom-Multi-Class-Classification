@@ -49,8 +49,16 @@ class CustomMultiClassClassifier:
     def fit(self, X_train: np.ndarray, y_train: np.ndarray) -> None:
         pass
 
-    def predict(self, X:np.ndarray) -> np.ndarray:
+    def predict_probabilities(self, X_test: np.ndarray) -> np.ndarray:
         pass
+
+    def predict(self, X_test:np.ndarray) -> np.ndarray:
+        """Return a 1D numpy array assigning predicted classifications based on classes seen during training for the
+        observations in <X_test> of shape nb_observations x nb_features. Those predictions are determined by choosing
+        the class with the highest probability among all of them per observation."""
+        probs_per_class = self.predict_probabilities(X_test)
+        # Select the class with the highest probability among all of them per observation
+        return np.argmax(probs_per_class, axis=1)
 
     def determine_accuracy(self, y: np.ndarray, y_predictions: np.ndarray) -> float:
         """Return the accuracy of the prediction <y_predictions> in comparison to the actual classification <y>."""
@@ -131,15 +139,9 @@ class SoftmaxRegression(CustomMultiClassClassifier):
         probs_per_class = self.softmax(X_per_class)
         return probs_per_class
 
-    def predict(self, X_test: np.ndarray) -> np.ndarray:
-        """Return a 1D numpy array assigning predicted classifications based on classes seen during training for the
-        observations in <X_test> of shape nb_observations x nb_features"""
-        probs_per_class = self.predict_probabilities(X_test)
-        return np.argmax(probs_per_class, axis=1)
-
     def plot_loss(self) -> None:
         plt.plot(self._loss)
-        plt.title("Model Cross Entropy Loss")
+        plt.title("Softmax Regression Model Cross Entropy Loss")
         plt.ylabel("Cross Entropy loss")
         plt.xlabel("Iteration")
         plt.legend(["train"], loc="upper left")
@@ -177,18 +179,3 @@ class OneVsRestRegression(CustomMultiClassClassifier):
         for class_number in range(self._nb_classes):
             probs_per_class[:, class_number] = self._onevrest_models[class_number].predict_probabilities(X_test)[:, 1]
         return probs_per_class
-
-    def predict(self, X_test: np.ndarray) -> np.ndarray:
-        """Return a 1D numpy array assigning predicted classifications based on classes seen during training for the
-        observations in <X_test> of shape nb_observations x nb_features. Those predictions are determined by choosing
-        the class with the highest probability among all of them per observation."""
-        probs_per_class = self.predict_probabilities(X_test)
-        # Select the class with the highest probability among all of them per observation
-        return np.argmax(probs_per_class, axis=1)
-
-
-class OneVsOneRegression(CustomMultiClassClassifier):
-
-    def fit(self, X_train: np.ndarray, y_train: np.ndarray) -> None:
-        return
-
